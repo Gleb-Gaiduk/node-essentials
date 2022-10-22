@@ -1,38 +1,37 @@
 const { Transform } = require('node:stream');
 
 class ParallelStream extends Transform {
-  constructor(userTransform, options) {
+  constructor(transformStream, options) {
     super({ objectMode: true, ...options });
-    this._userTransform = userTransform;
-    this._runningTasks = 0;
-    this._terminateCb = null;
+    this._transformStream = transformStream;
+    this._operationsCount = 0;
+    this._onDoneRef = null;
   }
 
-  _transform(chunk, enc, doneCb) {
-    this._runningTasks++;
-    this._userTransform(
+  _transform(chunk, enc, onDone) {
+    this._operationsCount++;
+    this._transformStream(
       chunk,
       enc,
       this.push.bind(this),
-      this._onComplete.bind(this)
+      this._onOperationComplete.bind(this)
     );
-    doneCb();
+    onDone();
   }
 
-  _flush(doneCb) {
-    if (this._runningTasks > 0) {
-      this._terminateCb = doneCb;
-    } else doneCb();
+  _flush(onDone) {
+    if (this._operationsCount > 0) {
+      this._onDoneRef = onDone;
+    } else onDone();
   }
 
-  _onComplete(err) {
-    this._runningTasks--;
-    if (err) {
-      return this.emit('error', err);
-    }
-
-    if (this._runningTasks === 0) {
-      this._terminateCb && this._terminateCb();
+  _onOperationComplete(err) {
+    this._operationsCount--;
+    if (err) this.emit('error', err);
+    if (this._operationsCount === 0) {
+      this._onDoneRef && this._onDoneRef();
     }
   }
 }
+
+module.exports.ParallelStream = ParallelStream;
