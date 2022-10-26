@@ -1,0 +1,1 @@
+Create a File in the Linux/Unix system using the cat command. The cat (concatenate) command is used to create, view, concatenate files in the Linux operating system. The touch command is also used to create a file in a Linux system without content whereas the cat creates files with some content.
